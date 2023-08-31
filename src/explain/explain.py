@@ -87,6 +87,9 @@ def explain_dataset(dataset_path, config):
     for smiles in data['smiles']:
         # create dirs
         create_dirs(save_dir, config['num_classes'], smiles)
+    
+        # save smiles string to explain
+        save_smiles_svg(smiles, f'{save_dir}/{smiles}/{smiles}.svg')
         
         # get different graphs needed 
         graph = construct_dgl_graph_from_smiles(smiles)
