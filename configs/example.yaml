@@ -1,0 +1,25 @@
+# setup options
+debug: false                                     # TODO: currently does nothing
+device: cpu                                      # cpu or cuda for running on gpu TODO: test on gpu
+seed: 42                                         # seed for dataset creation TODO: set global seed   
+run_name: example                                # run name 
+
+# dataset options
+dataset_folder: data/MUTAG/                      # folder where your data is. data should be in csv format in a raw folder with smiles and label titels            
+train_split: 0.8
+valid_split: 0.1
+test_split: 0.1
+batch_size: 16
+
+# model options
+model: WLNClassifier                             # model to use. currently only WLNClassifier works
+num_classes: 2                                   # number of classes in dataset TODO: modify dataset processing to include more classes
+node_feat_size: 83                               # number of node features 
+edge_feat_size: 6                                # number of edge features 
+hidden_size: 300                                 # size of hidden layers
+gnn_layers: 2                                    # number of gnn layers
+
+# optimiser options
+learning_rate: 0.01
+max_epochs: 100
+early_stopping_epochs: 10

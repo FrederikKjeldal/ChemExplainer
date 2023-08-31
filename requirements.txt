@@ -1,0 +1,8 @@
+dgl
+dgllife
+torch
+rdkit
+pandas
+scikit-learn
+PyYAML
+packaging
