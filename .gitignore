@@ -1,7 +1,7 @@
 # User added
 default.profraw
 *.swp
-.DS_STORE
+*.DS_STORE
 notebooks/*.ipynb_checkpoints
 lightning_logs/
 .cachedir

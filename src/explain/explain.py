@@ -1,7 +1,5 @@
 import yaml
-import dgl
 import torch
-from torch import nn
 import numpy as np
 import pandas as pd
 from torch.utils.data import DataLoader
@@ -15,6 +13,7 @@ from explain.subgraphx import SubgraphX
 from explain.sme import SME
 from explain.chemsubgraphx import ChemSubgraphX
 from explain.visualize import save_smiles_svg, save_explanation_svg
+
 
 def explain_smiles(smiles, config):
     # explanation directory
@@ -54,7 +53,7 @@ def explain_smiles(smiles, config):
             f.write(str(probs[:, target_class].item()))
 
         # SubgraphX
-        explain_with_subgraphx(smiles, graph, model, target_class, config)
+        # explain_with_subgraphx(smiles, graph, model, target_class, config)
 
         # SME
         explain_with_sme(smiles, graph, model, target_class, config)
@@ -84,12 +83,23 @@ def explain_dataset(dataset_path, config):
     # datasets
     data = pd.read_csv(dataset_path)
 
-    for smiles in data['smiles']:
+    # are there labels in the data?
+    try:
+        labels_exist = True
+        labels = data['label']
+    except KeyError:
+        labels_exist = False
+
+    for i, smiles in enumerate(data['smiles']):
         # create dirs
         create_dirs(save_dir, config['num_classes'], smiles)
     
         # save smiles string to explain
         save_smiles_svg(smiles, f'{save_dir}/{smiles}/{smiles}.svg')
+        if labels_exist:
+            # save label
+            with open(f'{save_dir}/{smiles}/label.txt', 'w') as f:
+                f.write(str(labels[i]))
         
         # get different graphs needed 
         graph = construct_dgl_graph_from_smiles(smiles)
@@ -109,7 +119,7 @@ def explain_dataset(dataset_path, config):
                 f.write(str(probs[:, target_class].item()))
 
             # SubgraphX
-            explain_with_subgraphx(smiles, graph, model, target_class, config)
+            # explain_with_subgraphx(smiles, graph, model, target_class, config)
 
             # SME
             explain_with_sme(smiles, graph, model, target_class, config)
@@ -178,10 +188,20 @@ def explain_with_subgraphx(smiles, graph_to_explain, model, target_class, config
     explainer = SubgraphX(model, num_hops=config['gnn_layers'])
 
     # explain the prediction for graph
-    nodes = explainer.explain_graph(graph_to_explain, graph_to_explain.ndata['node'], graph_to_explain.edata['edge'], target_class=target_class)
+    nodes_explain = explainer.explain_graph(graph_to_explain, graph_to_explain.ndata['node'], graph_to_explain.edata['edge'], target_class=target_class)
+
+    best_immediate_reward = 0
+    best_nodes = torch.tensor([])
+    for node_value in nodes_explain:
+        reward = node_value[1]
+        nodes = node_value[0]
+
+        if reward > best_immediate_reward:
+            best_immediate_reward = reward
+            best_nodes = nodes
 
     # visualize explained graph
-    atoms = nodes.tolist()
+    atoms = best_nodes.tolist()
     save_explanation_svg(smiles, atoms, f'{save_dir}/{smiles}/class_{target_class}/subgraphx.svg')
 
     return
@@ -194,8 +214,9 @@ def explain_with_sme(smiles, graph_to_explain, model, target_class, config):
     explainer = SME(model)
 
     # explain the prediction for graph
-    best_immediate_reward = float("-inf")
-    for mask_type in ['fg', 'murcko', 'brics', 'combination']:
+    best_immediate_reward = 0
+    best_nodes = []
+    for mask_type in ['fg', 'murcko', 'brics']:
         nodes_explain = explainer.explain_graph(smiles, graph_to_explain, graph_to_explain.ndata['node'], graph_to_explain.edata['edge'], target_class=target_class, mask_type=mask_type)
 
         for node_value in nodes_explain:
@@ -222,7 +243,8 @@ def explain_with_chemsubgraphx(smiles, graph_to_explain, model, target_class, co
     # explain the prediction for graph
     nodes_explain = explainer.explain_graph(smiles, graph_to_explain, graph_to_explain.ndata['node'], graph_to_explain.edata['edge'], target_class=target_class)
 
-    best_immediate_reward = float("-inf")
+    best_immediate_reward = 0
+    best_nodes = [[]]
     for node_value in nodes_explain:
         reward = node_value[1]
         nodes = node_value[0]

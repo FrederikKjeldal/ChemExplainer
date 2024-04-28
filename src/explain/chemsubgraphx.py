@@ -189,6 +189,8 @@ class ChemSubgraphX(SubgraphX):
         best_immediate_reward = float("-inf")
         nodes_values = []
         for mcts_node in self.mcts_node_maps.values():
+            if len(mcts_node.nodes) == self.simple_graph.num_nodes():
+                continue
             nodes = []
             for simple_node in mcts_node.nodes:
                 nodes.append(self.subgroups[simple_node])

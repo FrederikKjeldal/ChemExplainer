@@ -65,7 +65,7 @@ class SubgraphX(nn.Module):
         high2low=True,
         num_child=12,
         num_rollouts=20,
-        node_min=3,
+        node_min=1,
         shapley_steps=100,
         log=False,
     ):
@@ -327,12 +327,18 @@ class SubgraphX(nn.Module):
 
         best_leaf = None
         best_immediate_reward = float("-inf")
+        nodes_values = []
         for mcts_node in self.mcts_node_maps.values():
-            if len(mcts_node.nodes) > self.node_min:
+            if len(mcts_node.nodes) == self.graph.num_nodes():
                 continue
+            # if len(mcts_node.nodes) > self.node_min:
+            #     continue
 
             if mcts_node.immediate_reward > best_immediate_reward:
                 best_leaf = mcts_node
                 best_immediate_reward = best_leaf.immediate_reward
 
-        return best_leaf.nodes
+            
+            nodes_values.append((mcts_node.nodes, mcts_node.immediate_reward))
+
+        return nodes_values

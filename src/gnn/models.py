@@ -93,7 +93,6 @@ class WLNClassifier(nn.Module):
         )
 
     def forward(self, graph, node_feats, edge_feats, embed=False, mask=None):
-        # Update representations for nodes in both reactants and candidate products
         node_feats = self.gnn(graph, node_feats, edge_feats)
 
         if embed:
