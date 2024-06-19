@@ -1,12 +1,13 @@
+import itertools
 from pathlib import Path
+
 import numpy as np
+from dgl import graph
 from rdkit import Chem
-from rdkit.Contrib.IFG.ifg import identify_functional_groups
 from rdkit.Chem import BRICS
 from rdkit.Chem.Scaffolds import MurckoScaffold
-from dgl import graph
+from rdkit.Contrib.IFG.ifg import identify_functional_groups
 
-import itertools
 
 def create_dirs(save_dir, num_classes=None, smiles=None):
     Path(f'{save_dir}/').mkdir(exist_ok=True)

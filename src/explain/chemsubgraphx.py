@@ -1,10 +1,10 @@
-from dgl.nn import SubgraphX
-from dgl.nn.pytorch.explain.subgraphx import MCTSNode
 import networkx as nx
-import torch
 import numpy as np
+import torch
 from dgl.base import NID
 from dgl.convert import to_networkx
+from dgl.nn import SubgraphX
+from dgl.nn.pytorch.explain.subgraphx import MCTSNode
 from dgl.subgraph import node_subgraph
 from dgl.transforms.functional import remove_nodes
 
@@ -13,27 +13,19 @@ from explain.utils import generate_chem_subgraphs
 
 class ChemSubgraphX(SubgraphX):
     def __init__(
-            self,
-            model,
-            num_hops,
-            coef=10.0,
-            high2low=True,
-            num_child=12,
-            num_rollouts=20,
-            node_min=1,
-            shapley_steps=100,
-            log=False,
+        self,
+        model,
+        num_hops,
+        coef=10.0,
+        high2low=True,
+        num_child=12,
+        num_rollouts=20,
+        node_min=1,
+        shapley_steps=100,
+        log=False,
     ):
         super(ChemSubgraphX, self).__init__(
-            model,
-            num_hops,
-            coef,
-            high2low,
-            num_child,
-            num_rollouts,
-            node_min,
-            shapley_steps,
-            log
+            model, num_hops, coef, high2low, num_child, num_rollouts, node_min, shapley_steps, log
         )
 
     def shapley(self, subgraph_nodes):
@@ -51,9 +43,7 @@ class ChemSubgraphX(SubgraphX):
             local_region = list(set(local_region + neighbors))
 
         split_point = num_nodes
-        coalition_space = list(set(local_region) - set(subgraph_nodes)) + [
-            split_point
-        ]
+        coalition_space = list(set(local_region) - set(subgraph_nodes)) + [split_point]
 
         marginal_contributions = []
         device = self.node_feat.device
@@ -96,7 +86,7 @@ class ChemSubgraphX(SubgraphX):
             marginal_contributions.append(include_value - exclude_value)
 
         return torch.cat(marginal_contributions).mean().item()
-    
+
     def get_mcts_children(self, mcts_node):
         r"""Get the children of the MCTS node for the search.
 
@@ -116,9 +106,7 @@ class ChemSubgraphX(SubgraphX):
         subg = node_subgraph(self.simple_graph, mcts_node.nodes)
         node_degrees = subg.out_degrees() + subg.in_degrees()
         k = min(subg.num_nodes(), self.num_child)
-        chosen_nodes = torch.topk(
-            node_degrees, k, largest=self.high2low
-        ).indices
+        chosen_nodes = torch.topk(node_degrees, k, largest=self.high2low).indices
 
         mcts_children_maps = dict()
 
@@ -126,9 +114,7 @@ class ChemSubgraphX(SubgraphX):
             new_subg = remove_nodes(subg, node.to(subg.idtype), store_ids=True)
             # Get the largest weakly connected component in the subgraph.
             nx_graph = to_networkx(new_subg.cpu())
-            largest_cc_nids = list(
-                max(nx.weakly_connected_components(nx_graph), key=len)
-            )
+            largest_cc_nids = list(max(nx.weakly_connected_components(nx_graph), key=len))
             # Map to the original node IDs.
             largest_cc_nids = new_subg.ndata[NID][largest_cc_nids].long()
             largest_cc_nids = subg.ndata[NID][largest_cc_nids].sort().values
@@ -144,18 +130,16 @@ class ChemSubgraphX(SubgraphX):
         mcts_node.children = list(mcts_children_maps.values())
         for child_mcts_node in mcts_node.children:
             if child_mcts_node.immediate_reward == 0:
-                child_mcts_node.immediate_reward = self.shapley(
-                    child_mcts_node.nodes
-                )
+                child_mcts_node.immediate_reward = self.shapley(child_mcts_node.nodes)
 
         return mcts_node.children
-    
+
     def generate_simplified_graph(self, smiles):
         simple_graph, subgroups = generate_chem_subgraphs(smiles)
 
         self.simple_graph = simple_graph
         self.subgroups = subgroups
-    
+
     def explain_graph(self, smiles, graph, node_feat, edge_feat, target_class, **kwargs):
         self.model.eval()
         assert (

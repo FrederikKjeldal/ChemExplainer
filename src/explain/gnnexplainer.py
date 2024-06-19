@@ -1,16 +1,14 @@
 """ GNNExplainer adapted from DGL """
 
-
 """Torch Module for GNNExplainer"""
 # pylint: disable= no-member, arguments-differ, invalid-name
 from math import sqrt
-import torch
 
+import torch
+from dgl.base import EID, NID
+from dgl.subgraph import khop_in_subgraph
 from torch import nn
 from tqdm import tqdm
-
-from dgl.base import NID, EID
-from dgl.subgraph import khop_in_subgraph
 
 
 class GNNExplainer(nn.Module):
@@ -65,17 +63,19 @@ class GNNExplainer(nn.Module):
         If True, it will log the computation process, default to True.
     """
 
-    def __init__(self,
-                 model,
-                 num_hops,
-                 lr=0.01,
-                 num_epochs=100,
-                 *,
-                 alpha1=0.005,
-                 alpha2=1.0,
-                 beta1=1.0,
-                 beta2=0.1,
-                 log=True):
+    def __init__(
+        self,
+        model,
+        num_hops,
+        lr=0.01,
+        num_epochs=100,
+        *,
+        alpha1=0.005,
+        alpha2=1.0,
+        beta1=1.0,
+        beta2=0.1,
+        log=True
+    ):
         super(GNNExplainer, self).__init__()
         self.model = model
         self.num_hops = num_hops
@@ -113,7 +113,7 @@ class GNNExplainer(nn.Module):
         std = 0.1
         feat_mask = nn.Parameter(torch.randn(1, feat_size, device=device) * std)
 
-        std = nn.init.calculate_gain('relu') * sqrt(2.0 / (2 * num_nodes))
+        std = nn.init.calculate_gain("relu") * sqrt(2.0 / (2 * num_nodes))
         edge_mask = nn.Parameter(torch.randn(num_edges, device=device) * std)
 
         return feat_mask, edge_mask
@@ -144,16 +144,18 @@ class GNNExplainer(nn.Module):
         # Edge mask sparsity regularization
         loss = loss + self.alpha1 * torch.sum(edge_mask)
         # Edge mask entropy regularization
-        ent = - edge_mask * torch.log(edge_mask + eps) - \
-            (1 - edge_mask) * torch.log(1 - edge_mask + eps)
+        ent = -edge_mask * torch.log(edge_mask + eps) - (1 - edge_mask) * torch.log(
+            1 - edge_mask + eps
+        )
         loss = loss + self.alpha2 * ent.mean()
 
         feat_mask = feat_mask.sigmoid()
         # Feature mask sparsity regularization
         loss = loss + self.beta1 * torch.mean(feat_mask)
         # Feature mask entropy regularization
-        ent = - feat_mask * torch.log(feat_mask + eps) - \
-            (1 - feat_mask) * torch.log(1 - feat_mask + eps)
+        ent = -feat_mask * torch.log(feat_mask + eps) - (1 - feat_mask) * torch.log(
+            1 - feat_mask + eps
+        )
         loss = loss + self.beta2 * ent.mean()
 
         return loss
@@ -254,7 +256,7 @@ class GNNExplainer(nn.Module):
 
         if self.log:
             pbar = tqdm(total=self.num_epochs)
-            pbar.set_description('Explain graph')
+            pbar.set_description("Explain graph")
 
         for _ in range(self.num_epochs):
             optimizer.zero_grad()

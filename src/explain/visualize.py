@@ -1,13 +1,14 @@
 from rdkit import Chem
 from rdkit.Chem import Draw
 
+
 def save_smiles_svg(smiles, filename, atom_label=True):
     mol = Chem.MolFromSmiles(smiles)
 
     if atom_label:
         for i, atom in enumerate(mol.GetAtoms()):
             label = i
-            atom.SetProp('atomNote', f'{label}')
+            atom.SetProp("atomNote", f"{label}")
 
     mol = Draw.rdMolDraw2D.PrepareMolForDrawing(mol)
     drawer = Draw.rdMolDraw2D.MolDraw2DSVG(300, 300)
@@ -15,10 +16,11 @@ def save_smiles_svg(smiles, filename, atom_label=True):
     drawer.FinishDrawing()
     svg = drawer.GetDrawingText()
 
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         f.write(svg)
 
     return
+
 
 def save_explanation_svg(smiles, atoms, filename, atom_label=False):
     mol = Chem.MolFromSmiles(smiles)
@@ -26,7 +28,7 @@ def save_explanation_svg(smiles, atoms, filename, atom_label=False):
     if atom_label:
         for i, atom in enumerate(mol.GetAtoms()):
             label = i
-            atom.SetProp('atomNote', f'{label}')
+            atom.SetProp("atomNote", f"{label}")
 
     mol = Draw.rdMolDraw2D.PrepareMolForDrawing(mol)
     drawer = Draw.rdMolDraw2D.MolDraw2DSVG(300, 300)
@@ -34,7 +36,7 @@ def save_explanation_svg(smiles, atoms, filename, atom_label=False):
     drawer.FinishDrawing()
     svg = drawer.GetDrawingText()
 
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         f.write(svg)
 
     return

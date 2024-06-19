@@ -1,14 +1,12 @@
 """ PGExplainer adapted from DGL """
 
-
 """Torch Module for PGExplainer"""
 import math
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from dgl import batch, khop_in_subgraph, NID
+from dgl import NID, batch, khop_in_subgraph
 
 __all__ = ["PGExplainer"]
 
@@ -72,9 +70,7 @@ class PGExplainer(nn.Module):
         self.init_bias = 0.0
 
         # Explanation network in PGExplainer
-        self.elayers = nn.Sequential(
-            nn.Linear(self.num_features, 64), nn.ReLU(), nn.Linear(64, 1)
-        )
+        self.elayers = nn.Sequential(nn.Linear(self.num_features, 64), nn.ReLU(), nn.Linear(64, 1))
 
     def set_masks(self, graph, edge_mask=None):
         r"""Set the edge mask that plays a crucial role to explain the
@@ -96,9 +92,7 @@ class PGExplainer(nn.Module):
             num_edges = graph.num_edges()
 
             init_bias = self.init_bias
-            std = nn.init.calculate_gain("relu") * math.sqrt(
-                2.0 / (2 * num_nodes)
-            )
+            std = nn.init.calculate_gain("relu") * math.sqrt(2.0 / (2 * num_nodes))
             self.edge_mask = torch.randn(num_edges) * std + init_bias
         else:
             self.edge_mask = edge_mask
@@ -159,16 +153,12 @@ class PGExplainer(nn.Module):
         if self.coff_budget <= 0:
             size_loss = self.coff_budget * torch.sum(edge_mask)
         else:
-            size_loss = self.coff_budget * F.relu(
-                torch.sum(edge_mask) - self.coff_budget
-            )
+            size_loss = self.coff_budget * F.relu(torch.sum(edge_mask) - self.coff_budget)
 
         # entropy
         scale = 0.99
         edge_mask = self.edge_mask * (2 * scale - 1.0) + (1.0 - scale)
-        mask_ent = -edge_mask * torch.log(edge_mask) - (
-            1 - edge_mask
-        ) * torch.log(1 - edge_mask)
+        mask_ent = -edge_mask * torch.log(edge_mask) - (1 - edge_mask) * torch.log(1 - edge_mask)
         mask_ent_loss = self.coff_connect * torch.mean(mask_ent)
 
         loss = pred_loss + size_loss + mask_ent_loss
@@ -199,9 +189,7 @@ class PGExplainer(nn.Module):
             bias = self.sample_bias
             random_noise = torch.rand(w.size()).to(w.device)
             random_noise = bias + (1 - 2 * bias) * random_noise
-            gate_inputs = torch.log(random_noise) - torch.log(
-                1.0 - random_noise
-            )
+            gate_inputs = torch.log(random_noise) - torch.log(1.0 - random_noise)
             gate_inputs = (gate_inputs + w) / beta
             gate_inputs = torch.sigmoid(gate_inputs)
         else:
@@ -229,9 +217,7 @@ class PGExplainer(nn.Module):
         Tensor
             A scalar tensor representing the loss.
         """
-        assert (
-            self.graph_explanation
-        ), '"explain_graph" must be True in initializing the module.'
+        assert self.graph_explanation, '"explain_graph" must be True in initializing the module.'
 
         self.model = self.model.to(graph.device)
         self.elayers = self.elayers.to(graph.device)
@@ -239,9 +225,7 @@ class PGExplainer(nn.Module):
         pred = self.model(graph, node_feat, edge_feat, **kwargs)
         pred = pred.argmax(-1).data
 
-        prob, _ = self.explain_graph(
-            graph, node_feat, edge_feat, tmp=tmp, training=True, **kwargs
-        )
+        prob, _ = self.explain_graph(graph, node_feat, edge_feat, tmp=tmp, training=True, **kwargs)
 
         loss = self.loss(prob, pred)
         return loss
@@ -342,9 +326,7 @@ class PGExplainer(nn.Module):
         >>> graph_feat = graph.ndata.pop("attr")
         >>> probs, edge_weight = explainer.explain_graph(graph, graph_feat)
         """
-        assert (
-            self.graph_explanation
-        ), '"explain_graph" must be True in initializing the module.'
+        assert self.graph_explanation, '"explain_graph" must be True in initializing the module.'
 
         self.model = self.model.to(graph.device)
         self.elayers = self.elayers.to(graph.device)

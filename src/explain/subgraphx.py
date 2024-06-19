@@ -1,13 +1,12 @@
-from dgl.nn.pytorch.explain.subgraphx import MCTSNode
-
 import math
+
 import networkx as nx
 import numpy as np
 import torch
 import torch.nn as nn
-
 from dgl.base import NID
 from dgl.convert import to_networkx
+from dgl.nn.pytorch.explain.subgraphx import MCTSNode
 from dgl.subgraph import node_subgraph
 from dgl.transforms.functional import remove_nodes
 
@@ -107,9 +106,7 @@ class SubgraphX(nn.Module):
             local_region = list(set(local_region + neighbors))
 
         split_point = num_nodes
-        coalition_space = list(set(local_region) - set(subgraph_nodes)) + [
-            split_point
-        ]
+        coalition_space = list(set(local_region) - set(subgraph_nodes)) + [split_point]
 
         marginal_contributions = []
         device = self.node_feat.device
@@ -163,9 +160,7 @@ class SubgraphX(nn.Module):
         subg = node_subgraph(self.graph, mcts_node.nodes)
         node_degrees = subg.out_degrees() + subg.in_degrees()
         k = min(subg.num_nodes(), self.num_child)
-        chosen_nodes = torch.topk(
-            node_degrees, k, largest=self.high2low
-        ).indices
+        chosen_nodes = torch.topk(node_degrees, k, largest=self.high2low).indices
 
         mcts_children_maps = dict()
 
@@ -173,9 +168,7 @@ class SubgraphX(nn.Module):
             new_subg = remove_nodes(subg, node.to(subg.idtype), store_ids=True)
             # Get the largest weakly connected component in the subgraph.
             nx_graph = to_networkx(new_subg.cpu())
-            largest_cc_nids = list(
-                max(nx.weakly_connected_components(nx_graph), key=len)
-            )
+            largest_cc_nids = list(max(nx.weakly_connected_components(nx_graph), key=len))
             # Map to the original node IDs.
             largest_cc_nids = new_subg.ndata[NID][largest_cc_nids].long()
             largest_cc_nids = subg.ndata[NID][largest_cc_nids].sort().values
@@ -191,9 +184,7 @@ class SubgraphX(nn.Module):
         mcts_node.children = list(mcts_children_maps.values())
         for child_mcts_node in mcts_node.children:
             if child_mcts_node.immediate_reward == 0:
-                child_mcts_node.immediate_reward = self.shapley(
-                    child_mcts_node.nodes
-                )
+                child_mcts_node.immediate_reward = self.shapley(child_mcts_node.nodes)
 
         return mcts_node.children
 
@@ -219,10 +210,7 @@ class SubgraphX(nn.Module):
         chosen_child = max(
             children_nodes,
             key=lambda c: c.total_reward / max(c.num_visit, 1)
-            + self.coef
-            * c.immediate_reward
-            * children_visit_sum_sqrt
-            / (1 + c.num_visit),
+            + self.coef * c.immediate_reward * children_visit_sum_sqrt / (1 + c.num_visit),
         )
         reward = self.mcts_rollout(chosen_child)
         chosen_child.num_visit += 1
@@ -338,7 +326,6 @@ class SubgraphX(nn.Module):
                 best_leaf = mcts_node
                 best_immediate_reward = best_leaf.immediate_reward
 
-            
             nodes_values.append((mcts_node.nodes, mcts_node.immediate_reward))
 
         return nodes_values
